@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Sudoku Solver - Smart Puzzle Recognition</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1 class="title">
+                <i class="fas fa-brain icon"></i>
+                AI Sudoku Solver
+            </h1>
+            <p class="subtitle">Upload a puzzle image and watch AI solve it instantly</p>
+        </div>
+    </header>
+    
+    <main class="main-container">
+        <div class="app-container">
+            <!-- Upload Section -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="imageLoader" name="imageLoader" accept="image/*" aria-label="Upload sudoku puzzle image"/>
+                    <div class="upload-content">
+                        <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                        <h3>Upload Sudoku Image</h3>
+                        <p>Drag & drop or click to select a puzzle image</p>
+                        <span class="file-types">Supports: JPG, PNG, WEBP</span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Controls Section -->
+            <section class="controls-section">
+                <div class="controls">
+                    <button id="solve-btn" class="btn btn-primary" disabled>
+                        <i class="fas fa-magic"></i>
+                        <span>Solve Puzzle</span>
+                    </button>
+                    <button id="clear-btn" class="btn btn-secondary">
+                        <i class="fas fa-eraser"></i>
+                        <span>Clear Board</span>
+                    </button>
+                    <button id="reset-btn" class="btn btn-outline">
+                        <i class="fas fa-refresh"></i>
+                        <span>Reset All</span>
+                    </button>
+                </div>
+            </section>
+            
+            <!-- Game Section -->
+            <section class="game-section">
+                <div class="game-container">
+                    <canvas id="imageCanvas" width="450" height="450" aria-hidden="true"></canvas>
+                    <div class="sudoku-container">
+                        <div id="sudoku-grid" class="sudoku-grid" role="grid" aria-label="Sudoku puzzle grid"></div>
+                        <div class="grid-overlay" id="gridOverlay"></div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Status Section -->
+            <section class="status-section">
+                <div id="status" class="status-message" role="status" aria-live="polite">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Upload an image of a Sudoku puzzle to begin</span>
+                </div>
+                <div id="loadingIndicator" class="loading-indicator hidden">
+                    <div class="spinner"></div>
+                    <span>Processing image...</span>
+                </div>
+            </section>
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <p>&copy; 2024 AI Sudoku Solver. Powered by advanced image recognition.</p>
+    </footer>
+    
+    <script src="script.js"></script>
+</body>
+</html>
