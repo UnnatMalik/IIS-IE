@@ -135,13 +135,6 @@ The portfolio is fully responsive and optimized for:
 - **Analytics Integration**
 - **PWA Features**
 
-## 🤝 Contributing
-
-This is a personal portfolio project, but suggestions and feedback are welcome!
-
-## 📄 License
-
-This project is created for educational and portfolio purposes.
 
 ## 👨‍💻 Author
 
