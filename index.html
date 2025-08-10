@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIS-IE Portfolio | Unnat Malik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: white;
+            overflow-x: hidden;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .project-card {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .project-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transition: left 0.5s;
+        }
+        
+        .project-card:hover::before {
+            left: 100%;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        }
+        
+        .floating {
+            animation: floating 4s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            25% { transform: translateY(-20px) rotate(2deg); }
+            50% { transform: translateY(-10px) rotate(-1deg); }
+            75% { transform: translateY(-15px) rotate(1deg); }
+        }
+        
+        .typing-effect {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid #667eea;
+        }
+        
+        .glow-effect {
+            position: relative;
+        }
+        
+        .glow-effect::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+        
+        .glow-effect:hover::after {
+            opacity: 1;
+        }
+        
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2, #f093fb);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 3s ease-in-out infinite;
+        }
+        
+        @keyframes gradient-shift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        .particle-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+        
+        .nav-blur {
+            backdrop-filter: blur(20px);
+            background: rgba(15, 15, 35, 0.8);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .section-fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .section-fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .tech-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .tech-badge:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+        }
+        
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            z-index: 9999;
+            transition: width 0.1s ease;
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .mobile-menu {
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-menu.active {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .mobile-menu:not(.active) {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Scroll Progress Bar -->
+    <div class="scroll-progress"></div>
+    
+    <!-- Three.js Background -->
+    <div id="three-container" class="particle-bg"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 nav-blur">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="text-2xl font-bold gradient-text">
+                    <i class="fas fa-code mr-2"></i>IIS-IE
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#home" class="hover:text-blue-400 transition-colors duration-300">Home</a>
+                    <a href="#projects" class="hover:text-blue-400 transition-colors duration-300">Projects</a>
+                    <a href="#about" class="hover:text-blue-400 transition-colors duration-300">About</a>
+                    <a href="#contact" class="hover:text-blue-400 transition-colors duration-300">Contact</a>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-btn" class="text-white p-2">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="mobile-menu md:hidden absolute top-full left-0 w-full bg-gray-900 bg-opacity-95 backdrop-blur-lg">
+            <div class="flex flex-col space-y-4 p-6">
+                <a href="#home" class="text-white hover:text-blue-400 transition-colors duration-300 py-2">Home</a>
+                <a href="#projects" class="text-white hover:text-blue-400 transition-colors duration-300 py-2">Projects</a>
+                <a href="#about" class="text-white hover:text-blue-400 transition-colors duration-300 py-2">About</a>
+                <a href="#contact" class="text-white hover:text-blue-400 transition-colors duration-300 py-2">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="min-h-screen flex items-center justify-center relative section-fade-in">
+        <div class="container mx-auto px-6 text-center">
+            <div class="floating mb-8">
+                <i class="fas fa-robot text-8xl feature-icon mb-6"></i>
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold mb-6 gradient-text">
+                IIS-IE Portfolio
+            </h1>
+            <p class="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
+                Innovative projects showcasing <span class="text-blue-400 font-semibold">AI</span>, 
+                <span class="text-green-400 font-semibold">Web Development</span>, and 
+                <span class="text-purple-400 font-semibold">Problem Solving</span>
+            </p>
+            <div class="flex flex-col md:flex-row gap-6 justify-center">
+                <a href="#projects" class="btn-primary inline-block">
+                    <i class="fas fa-rocket mr-2"></i>View Projects
+                </a>
+                <a href="#about" class="btn-secondary inline-block">
+                    <i class="fas fa-info-circle mr-2"></i>Learn More
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section id="projects" class="py-20 relative section-fade-in">
+        <div class="container mx-auto px-6">
+            <h2 class="text-4xl md:text-5xl font-bold text-center mb-16 gradient-text">
+                Featured Projects
+            </h2>
+            
+            <div class="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto">
+                <!-- Chat Bot Project -->
+                <div class="project-card glass-effect rounded-2xl p-8 glow-effect">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-comments feature-icon mr-4"></i>
+                        <h3 class="text-2xl font-bold">Code-GPT</h3>
+                    </div>
+                    <p class="text-gray-300 mb-6 leading-relaxed">
+                        A powerful AI chatbot built using Gemini 2.0 Flash and Streamlit, capable of analyzing images, documents, maintaining chat history, and Code generations.
+                    </p>
+                    <div class="mb-6">
+                        <h4 class="font-semibold mb-3 text-blue-400">Key Features:</h4>
+                        <ul class="text-gray-300 space-y-2">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>AI-Powered Chat with Gemini 2.0 Flash</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Document & Image Analysis</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Chat History Retention</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Streamlit UI</li>
+                        </ul>
+                    </div>
+                    <div class="mb-6">
+                        <h4 class="font-semibold mb-3 text-blue-400">Tech Stack:</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="tech-badge">Python</span>
+                            <span class="tech-badge">Streamlit</span>
+                            <span class="tech-badge">Gemini AI</span>
+                        </div>
+                    </div>
+                    <a href="http://localhost:8501/" class="btn-primary inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>View Project
+                    </a>
+                </div>
+
+                <!-- Sudoku Project -->
+                <div class="project-card glass-effect rounded-2xl p-8 glow-effect">
+                    <div class="flex items-center mb-6">
+                        <i class="fas fa-puzzle-piece feature-icon mr-4"></i>
+                        <h3 class="text-2xl font-bold">Sudoku Solver</h3>
+                    </div>
+                    <p class="text-gray-300 mb-6 leading-relaxed">
+                        A web-based Sudoku solver that uses Python Flask backend for image-based grid extraction and puzzle solving with OCR technology.
+                    </p>
+                    <div class="mb-6">
+                        <h4 class="font-semibold mb-3 text-purple-400">Key Features:</h4>
+                        <ul class="text-gray-300 space-y-2">
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Image-based Grid Extraction</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>OCR Technology Integration</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Interactive Web UI</li>
+                            <li><i class="fas fa-check text-green-400 mr-2"></i>Real-time Puzzle Solving</li>
+                        </ul>
+                    </div>
+                    <div class="mb-6">
+                        <h4 class="font-semibold mb-3 text-purple-400">Tech Stack:</h4>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="tech-badge">Python</span>
+                            <span class="tech-badge">Flask</span>
+                            <span class="tech-badge">HTML/CSS/JS</span>
+                            <span class="tech-badge">OCR.space API</span>
+                        </div>
+                    </div>
+                    <a href="http://127.0.0.1:5000/" class="btn-primary inline-block">
+                        <i class="fas fa-external-link-alt mr-2"></i>View Project
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-20 relative section-fade-in">
+        <div class="container mx-auto px-6">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-12 gradient-text">About IIS-IE</h2>
+                <div class="glass-effect rounded-2xl p-8 mb-12">
+                    <p class="text-xl text-gray-300 leading-relaxed mb-8">
+                        IIS-IE (Information and Intelligent Systems - Interactive Experiences) is a collection of innovative projects 
+                        that demonstrate the power of modern web technologies, artificial intelligence, and creative problem-solving.
+                    </p>
+                    <p class="text-xl text-gray-300 leading-relaxed">
+                        These projects showcase expertise in Python development, AI integration, web application design, 
+                        and the ability to create user-friendly solutions for complex problems.
+                    </p>
+                </div>
+                
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="glass-effect rounded-xl p-6 glow-effect">
+                        <i class="fas fa-brain feature-icon"></i>
+                        <h3 class="text-xl font-bold mb-2">AI & Machine Learning</h3>
+                        <p class="text-gray-300">Integration of cutting-edge AI models and intelligent systems</p>
+                    </div>
+                    <div class="glass-effect rounded-xl p-6 glow-effect">
+                        <i class="fas fa-code feature-icon"></i>
+                        <h3 class="text-xl font-bold mb-2">Web Development</h3>
+                        <p class="text-gray-300">Modern web applications with responsive design and user experience</p>
+                    </div>
+                    <div class="glass-effect rounded-xl p-6 glow-effect">
+                        <i class="fas fa-lightbulb feature-icon"></i>
+                        <h3 class="text-xl font-bold mb-2">Problem Solving</h3>
+                        <p class="text-gray-300">Creative solutions to complex computational challenges</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 relative section-fade-in">
+        <div class="container mx-auto px-6">
+            <div class="max-w-4xl mx-auto text-center">
+                <h2 class="text-4xl md:text-5xl font-bold mb-12 gradient-text">Get In Touch</h2>
+                <div class="glass-effect rounded-2xl p-8">
+                    <p class="text-xl text-gray-300 mb-8">
+                        Interested in collaborating or learning more about these projects?
+                    </p>
+                    <div class="flex flex-col md:flex-row gap-6 justify-center">
+                        <a href="https://www.linkedin.com/in/unnat-malik" class="btn-primary inline-block">
+                            <i class="fab fa-linkedin mr-2"></i>LinkedIn
+                        </a>
+                        <a href="https://github.com/UnnatMalik/IIS-IE" class="btn-secondary inline-block">
+                            <i class="fab fa-github mr-2"></i>GitHub
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-8 text-center text-gray-400 border-t border-gray-800">
+        <div class="container mx-auto px-6">
+            <p>&copy; 2024 IIS-IE Portfolio. Created by <span class="gradient-text font-semibold">Unnat Malik</span>.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+let scene, camera, renderer, particles;
+let isThreeJSInitialized = false;
+
+// Initialize Three.js with better error handling
+function initThreeJS() {
+    try {
+        if (typeof THREE === 'undefined') {
+            console.warn('Three.js not loaded, skipping 3D background');
+            return;
+        }
+
+        // Scene setup
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        
+        // Renderer setup with better performance
+        renderer = new THREE.WebGLRenderer({ 
+            alpha: true, 
+            antialias: true,
+            powerPreference: "high-performance"
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        
+        const container = document.getElementById('three-container');
+        if (container) {
+            container.appendChild(renderer.domElement);
+        }
+
+        // Create enhanced particles
+        const geometry = new THREE.BufferGeometry();
+        const particleCount = 600; // Reduced for better performance
+        const positions = new Float32Array(particleCount * 3);
+        const colors = new Float32Array(particleCount * 3);
+        const sizes = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount * 3; i += 3) {
+            positions[i] = (Math.random() - 0.5) * 25;
+            positions[i + 1] = (Math.random() - 0.5) * 25;
+            positions[i + 2] = (Math.random() - 0.5) * 25;
+
+            // Create beautiful color variations
+            const color = new THREE.Color();
+            color.setHSL(Math.random() * 0.3 + 0.6, 0.6, 0.4);
+            colors[i] = color.r;
+            colors[i + 1] = color.g;
+            colors[i + 2] = color.b;
+
+            sizes[i / 3] = Math.random() * 0.8 + 0.2;
+        }
+
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+        geometry.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
+
+        // Enhanced material with custom shader
+        const material = new THREE.PointsMaterial({
+            size: 0.5,
+            vertexColors: true,
+            transparent: true,
+            opacity: 0.6,
+            sizeAttenuation: true,
+            blending: THREE.AdditiveBlending
+        });
+
+        particles = new THREE.Points(geometry, material);
+        scene.add(particles);
+
+        camera.position.z = 8;
+
+        // Animation loop with performance optimization
+        let animationId;
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            if (particles) {
+                particles.rotation.x += 0.0005;
+                particles.rotation.y += 0.001;
+                
+                // Add subtle wave effect
+                const time = Date.now() * 0.0001;
+                particles.rotation.z = Math.sin(time) * 0.1;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        isThreeJSInitialized = true;
+        console.log('Three.js initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Three.js:', error);
+    }
+}
+
+// Enhanced smooth scrolling
+function initSmoothScrolling() {
+    const links = document.querySelectorAll('a[href^="#"]');
+    
+    links.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href');
+            const targetSection = document.querySelector(targetId);
+            
+            if (targetSection) {
+                const offsetTop = targetSection.offsetTop - 80; // Account for fixed nav
+                
+                window.scrollTo({
+                    top: offsetTop,
+                    behavior: 'smooth'
+                });
+            }
+        });
+    });
+}
+
+// Improved scroll animations with Intersection Observer
+function initScrollAnimations() {
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, observerOptions);
+
+    // Observe all sections
+    const animatedElements = document.querySelectorAll('.section-fade-in');
+    animatedElements.forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Typing effect removed - title now displays normally
+function initTypingEffect() {
+    // Function kept for compatibility but no longer needed
+    console.log('Typing effect disabled - title displays normally');
+}
+
+// Improved mobile menu
+function initMobileMenu() {
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileMenu = document.getElementById('mobile-menu');
+    
+    if (mobileMenuBtn && mobileMenu) {
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('active');
+            
+            // Close menu when clicking on a link
+            const menuLinks = mobileMenu.querySelectorAll('a');
+            menuLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    mobileMenu.classList.remove('active');
+                });
+            });
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mobileMenuBtn.contains(e.target) && !mobileMenu.contains(e.target)) {
+                mobileMenu.classList.remove('active');
+            }
+        });
+    }
+}
+
+// Enhanced particle interaction
+function initParticleInteraction() {
+    let mouseX = 0;
+    let mouseY = 0;
+    let isMouseMoving = false;
+    let mouseTimeout;
+
+    document.addEventListener('mousemove', (event) => {
+        mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+        mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+        isMouseMoving = true;
+        
+        clearTimeout(mouseTimeout);
+        mouseTimeout = setTimeout(() => {
+            isMouseMoving = false;
+        }, 100);
+    });
+
+    function updateParticles() {
+        if (particles && isMouseMoving) {
+            particles.rotation.x += mouseY * 0.0005;
+            particles.rotation.y += mouseX * 0.0005;
+        }
+        requestAnimationFrame(updateParticles);
+    }
+    updateParticles();
+}
+
+// Enhanced scroll progress indicator
+function initScrollProgress() {
+    const progressBar = document.querySelector('.scroll-progress');
+    
+    if (progressBar) {
+        window.addEventListener('scroll', () => {
+            const scrollTop = window.pageYOffset;
+            const docHeight = document.body.offsetHeight - window.innerHeight;
+            const scrollPercent = (scrollTop / docHeight) * 100;
+            progressBar.style.width = Math.min(scrollPercent, 100) + '%';
+        });
+    }
+}
+
+// Enhanced hover effects
+function initHoverEffects() {
+    const projectCards = document.querySelectorAll('.project-card');
+    
+    projectCards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.transform = 'translateY(-15px) scale(1.02)';
+            card.style.boxShadow = '0 25px 50px rgba(0, 0, 0, 0.3)';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.transform = 'translateY(0) scale(1)';
+            card.style.boxShadow = '0 8px 32px rgba(0, 0, 0, 0.3)';
+        });
+    });
+
+    // Add ripple effect to buttons
+    const buttons = document.querySelectorAll('.btn-primary, .btn-secondary');
+    buttons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const ripple = document.createElement('span');
+            const rect = this.getBoundingClientRect();
+            const size = Math.max(rect.width, rect.height);
+            const x = e.clientX - rect.left - size / 2;
+            const y = e.clientY - rect.top - size / 2;
+            
+            ripple.style.width = ripple.style.height = size + 'px';
+            ripple.style.left = x + 'px';
+            ripple.style.top = y + 'px';
+            ripple.classList.add('ripple');
+            
+            this.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        });
+    });
+}
+
+// Performance optimized window resize handler
+function handleResize() {
+    if (camera && renderer) {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+}
+
+// Add CSS for ripple effect
+function addRippleStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
+        .btn-primary, .btn-secondary {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ripple {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(0);
+            animation: ripple-animation 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-animation {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// Enhanced loading animation
+function initLoadingAnimation() {
+    document.body.style.opacity = '0';
+    document.body.style.transition = 'opacity 1s ease';
+    
+    setTimeout(() => {
+        document.body.style.opacity = '1';
+    }, 100);
+}
+
+// Performance monitoring
+function initPerformanceMonitoring() {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    
+    function checkPerformance() {
+        frameCount++;
+        const currentTime = performance.now();
+        
+        if (currentTime - lastTime >= 1000) {
+            const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+            if (fps < 30 && isThreeJSInitialized) {
+                console.warn('Low FPS detected:', fps);
+                // Reduce particle count if needed
+            }
+            frameCount = 0;
+            lastTime = currentTime;
+        }
+        
+        requestAnimationFrame(checkPerformance);
+    }
+    
+    checkPerformance();
+}
+
+// Initialize everything when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Initializing IIS-IE Portfolio...');
+    
+    // Add ripple styles first
+    addRippleStyles();
+    
+    // Initialize all features
+    initThreeJS();
+    initSmoothScrolling();
+    initScrollAnimations();
+    initTypingEffect();
+    initMobileMenu();
+    initParticleInteraction();
+    initScrollProgress();
+    initHoverEffects();
+    initLoadingAnimation();
+    initPerformanceMonitoring();
+    
+    // Event listeners
+    window.addEventListener('resize', handleResize);
+    
+    // Add keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (mobileMenu) {
+                mobileMenu.classList.remove('active');
+            }
+        }
+    });
+    
+    console.log('IIS-IE Portfolio initialized successfully!');
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    if (renderer) {
+        renderer.dispose();
+    }
+});
+
+// Add some fun easter eggs
+document.addEventListener('DOMContentLoaded', () => {
+    // Konami code easter egg
+    let konamiCode = [];
+    const konamiSequence = [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]; // ↑↑↓↓←→←→BA
+    
+    document.addEventListener('keydown', (e) => {
+        konamiCode.push(e.keyCode);
+        if (konamiCode.length > konamiSequence.length) {
+            konamiCode.shift();
+        }
+        
+        if (konamiCode.join(',') === konamiSequence.join(',')) {
+            // Trigger special effect
+            document.body.style.animation = 'rainbow 2s infinite';
+            setTimeout(() => {
+                document.body.style.animation = '';
+            }, 2000);
+        }
+    });
+    
+    // Add rainbow animation
+    const rainbowStyle = document.createElement('style');
+    rainbowStyle.textContent = `
+        @keyframes rainbow {
+            0% { filter: hue-rotate(0deg); }
+            100% { filter: hue-rotate(360deg); }
+        }
+    `;
+    document.head.appendChild(rainbowStyle);
+}); 
+    </script>
+</body>
+</html> 
