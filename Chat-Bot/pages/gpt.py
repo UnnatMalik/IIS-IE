@@ -7,7 +7,6 @@ import re
 import PyPDF2  # Add this import
 import os
 
-
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API'))
 genai.GenerationConfig.temperature = 0.7

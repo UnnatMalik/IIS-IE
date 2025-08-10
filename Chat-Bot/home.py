@@ -82,9 +82,7 @@ def main():
                 <a href='#about' class='nav-link'>About</a>
                 <a href='#features' class='nav-link'>Features</a>
                 <a href='#'>CONTACT US</a>
-            </div>
-            <a href='#' class='login-button'>LOGIN</a>
-        </div>
+
     """, unsafe_allow_html=True)
     
     # Main Content Section
