@@ -1,11 +1,11 @@
-# Bro-Bot AI
+# Code-GPT 🤖
 
 
 
-A powerful AI chatbot built using **Gemini 1.5 Flash** and **Streamlit**, capable of analyzing images, documents, and maintaining chat history.
+A powerful AI chatbot built using **Gemini 2.0 Flash** and **Streamlit**, capable of analyzing images, documents, and maintaining chat history.
 
 ## 🚀 Features
-- **AI-Powered Chat**: Conversational AI using Google Gemini 1.5 Flash.
+- **AI-Powered Chat**: Conversational AI using Google Gemini 2.0 Flash.
 - **Document & Image Analysis**: Upload and analyze files in real-time.
 - **Chat History**: Retains past conversations for continuity.
 - **Streamlit UI**: Simple and interactive web-based interface.
@@ -13,7 +13,7 @@ A powerful AI chatbot built using **Gemini 1.5 Flash** and **Streamlit**, capabl
 ## 🛠 Tech Stack
 - **Frontend**: Streamlit
 - **Backend**: Python
-- **AI Model**: Gemini 1.5 Flash
+- **AI Model**: Gemini 2.0 Flash
 - **Deployment**: Streamlit Cloud (Yet to be done)
 
 ## 📸 Project Screenshots
