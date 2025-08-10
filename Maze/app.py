@@ -5,8 +5,11 @@ from PIL import Image
 import numpy as np
 import cv2
 import heapq
+import json
+import base64
+from io import BytesIO
 
-# --- A* Pathfinding Helper Functions ---
+# --- A* Pathfinding Algorithm ---
 def heuristic(a, b):
     """Calculate Manhattan distance between two points"""
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
@@ -67,187 +70,428 @@ def astar(maze, start, end):
     return None
 
 def find_nearest_path(maze, point, max_search=50):
-    """Find the nearest path pixel to a given point"""
+    """Find the nearest path pixel to a given point using BFS"""
     x, y = point
     rows, cols = maze.shape
     
-    # Start from the point and expand outward
-    for r in range(max_search):
-        for dx in range(-r, r + 1):
-            for dy in range(-r, r + 1):
-                nx, ny = x + dx, y + dy
-                if 0 <= nx < rows and 0 <= ny < cols:
-                    if maze[nx][ny] == 1:  # 1 = path
-                        return (nx, ny)
+    # Check if the point is already valid
+    if 0 <= x < rows and 0 <= y < cols and maze[x][y] == 1:
+        return (x, y)
+    
+    # Use BFS to find nearest valid path
+    from collections import deque
+    queue = deque([(x, y, 0)])  # (row, col, distance)
+    visited = set([(x, y)])
+    
+    directions = [(0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+    
+    while queue:
+        cx, cy, dist = queue.popleft()
+        
+        if dist > max_search:
+            break
+            
+        # Check if current position is a valid path
+        if 0 <= cx < rows and 0 <= cy < cols and maze[cx][cy] == 1:
+            return (cx, cy)
+        
+        # Add neighbors to queue
+        for dx, dy in directions:
+            nx, ny = cx + dx, cy + dy
+            if (nx, ny) not in visited and 0 <= nx < rows and 0 <= ny < cols:
+                visited.add((nx, ny))
+                queue.append((nx, ny, dist + 1))
+    
     return None
 
 def convert_image_to_maze(image, target_size=(100, 100)):
-    """Convert image to binary maze grid"""
+    """Convert image to binary maze grid with improved processing"""
     # Convert to grayscale and resize
     image = image.convert("L")
-    image = image.resize(target_size)
+    image = image.resize(target_size, Image.Resampling.LANCZOS)
     img_np = np.array(image)
     
-    # Threshold to create binary image
-    _, binary = cv2.threshold(img_np, 128, 255, cv2.THRESH_BINARY)
+    # Apply Gaussian blur to reduce noise
+    img_np = cv2.GaussianBlur(img_np, (3, 3), 0)
     
-    # Convert to maze grid: 0 = wall, 1 = path
-    maze = (binary == 255).astype(int)
+    # Use adaptive threshold for better results
+    binary = cv2.adaptiveThreshold(img_np, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY, 11, 2)
+    
+    # Convert to maze grid: 1 = path (white), 0 = wall (black)
+    maze = (binary > 127).astype(int)
+    
+    # Clean up small noise
+    kernel = np.ones((2, 2), np.uint8)
+    maze = cv2.morphologyEx(maze.astype(np.uint8), cv2.MORPH_CLOSE, kernel).astype(int)
+    
     return maze
 
-def draw_path_on_maze(maze, path):
-    """Draw the path on the maze as a continuous line and return the image"""
-    if path is None:
-        return maze
+def create_maze_html(maze, path=None, cell_size=6):
+    """Create HTML representation of the maze with proper path visualization"""
+    rows, cols = maze.shape
     
-    # Create a copy of the maze for visualization
-    maze_with_path = maze.copy().astype(np.uint8) * 255
+    # Create CSS for the maze
+    css = f"""
+    <style>
+    .maze-container {{
+        display: inline-block;
+        background: #f0f0f0;
+        border: 2px solid #333;
+        padding: 5px;
+        margin: 10px auto;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }}
+    .maze-grid {{
+        display: grid;
+        grid-template-columns: repeat({cols}, {cell_size}px);
+        grid-template-rows: repeat({rows}, {cell_size}px);
+        gap: 0;
+        background: transparent;
+    }}
+    .maze-cell {{
+        width: {cell_size}px;
+        height: {cell_size}px;
+        border: none;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        position: relative;
+    }}
+    .wall {{
+        background-color: #000000;
+    }}
+    .path {{
+        background-color: #ffffff;
+        border: 1px solid #e0e0e0;
+    }}
+    .solution-path {{
+        background-color: #ff0000 !important;
+        border: 1px solid #cc0000 !important;
+        box-shadow: 0 0 2px rgba(255,0,0,0.6);
+        z-index: 10;
+    }}
+    .start-point {{
+        background-color: #00ff00 !important;
+        border: 2px solid #00cc00 !important;
+        box-shadow: 0 0 4px rgba(0,255,0,0.8);
+        z-index: 15;
+    }}
+    .end-point {{
+        background-color: #0000ff !important;
+        border: 2px solid #0000cc !important;
+        box-shadow: 0 0 4px rgba(0,0,255,0.8);
+        z-index: 15;
+    }}
+    .maze-info {{
+        margin: 15px 0;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }}
+    .legend {{
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        margin: 10px 0;
+        flex-wrap: wrap;
+    }}
+    .legend-item {{
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 5px 10px;
+        background: white;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+    }}
+    .legend-color {{
+        width: 16px;
+        height: 16px;
+        border: 1px solid #333;
+        border-radius: 2px;
+    }}
+    .path-stats {{
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 10px;
+        margin: 10px 0;
+    }}
+    .stat-box {{
+        text-align: center;
+        padding: 12px;
+        background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+        border-radius: 6px;
+        border: 1px solid #90caf9;
+    }}
+    .stat-box strong {{
+        color: #1565c0;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }}
+    .stat-box span {{
+        color: #333;
+        font-size: 12px;
+    }}
+    </style>
+    """
     
-    # Draw path as a continuous line
-    if len(path) > 1:
-        # Convert path to numpy array for easier manipulation
-        path_array = np.array(path)
-        
-        # Draw line segments between consecutive points
-        for i in range(len(path) - 1):
-            start_point = path_array[i]
-            end_point = path_array[i + 1]
+    # Create HTML for the maze
+    html = f"""
+    {css}
+    <div class="maze-container">
+        <div class="maze-grid">
+    """
+    
+    # Convert path to set for O(1) lookup
+    path_set = set(path) if path else set()
+    path_cells_rendered = 0
+    
+    # Generate maze cells
+    for i in range(rows):
+        for j in range(cols):
+            cell_classes = ["maze-cell"]
             
-            # Use OpenCV line drawing for smooth lines
-            # For grayscale images, use a dark color value (0 = black, 255 = white)
-            cv2.line(maze_with_path, 
-                     (start_point[1], start_point[0]),  # OpenCV uses (x, y) format
-                     (end_point[1], end_point[0]), 
-                     color=0,  # Black color for maximum visibility
-                     thickness=2)  # Line thickness
+            if maze[i][j] == 0:
+                cell_classes.append("wall")
+            else:
+                cell_classes.append("path")
+                
+                # Check if this cell is part of the solution path
+                if path and (i, j) in path_set:
+                    # Special styling for start and end points
+                    if path and (i, j) == path[0]:
+                        cell_classes.append("start-point")
+                    elif path and (i, j) == path[-1]:
+                        cell_classes.append("end-point")
+                    else:
+                        cell_classes.append("solution-path")
+                    path_cells_rendered += 1
+            
+            html += f'<div class="{" ".join(cell_classes)}" title="({i}, {j})"></div>'
     
-    return maze_with_path
+    html += """
+        </div>
+    </div>
+    """
+    
+    # Add legend and statistics
+    html += f"""
+    <div class="maze-info">
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #000000;"></div>
+                <span>Wall</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ffffff; border: 2px solid #e0e0e0;"></div>
+                <span>Path</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #ff0000;"></div>
+                <span>Solution</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #00ff00;"></div>
+                <span>Start</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #0000ff;"></div>
+                <span>End</span>
+            </div>
+        </div>
+    """
+    
+    # Add path statistics if path exists
+    if path:
+        efficiency = round((abs(path[-1][0] - path[0][0]) + abs(path[-1][1] - path[0][1])) / len(path) * 100, 1)
+        html += f"""
+        <div class="path-stats">
+            <div class="stat-box">
+                <strong>Path Length</strong>
+                <span>{len(path)} steps</span>
+            </div>
+            <div class="stat-box">
+                <strong>Start Point</strong>
+                <span>({path[0][0]}, {path[0][1]})</span>
+            </div>
+            <div class="stat-box">
+                <strong>End Point</strong>
+                <span>({path[-1][0]}, {path[-1][1]})</span>
+            </div>
+            <div class="stat-box">
+                <strong>Path Efficiency</strong>
+                <span>{efficiency}%</span>
+            </div>
+            <div class="stat-box">
+                <strong>Cells Rendered</strong>
+                <span>{path_cells_rendered} / {len(path)}</span>
+            </div>
+        </div>
+        """
+    
+    html += "</div>"
+    return html
 
-def draw_path_points(maze, path):
-    """Draw the path on the maze as individual points and return the image"""
-    if path is None:
-        return maze
+def create_test_maze():
+    """Create a test maze for debugging"""
+    maze = np.ones((15, 15), dtype=int)
     
-    # Create a copy of the maze for visualization
-    maze_with_path = maze.copy().astype(np.uint8) * 255
+    # Create walls to form a simple maze
+    # Outer walls
+    maze[0, :] = 0  # Top wall
+    maze[-1, :] = 0  # Bottom wall
+    maze[:, 0] = 0  # Left wall
+    maze[:, -1] = 0  # Right wall
     
-    # Draw each path point
-    for point in path:
-        # Draw a small circle at each point
-        cv2.circle(maze_with_path, 
-                   (point[1], point[0]),  # OpenCV uses (x, y) format
-                   radius=2,  # Larger radius for better visibility
-                   color=0,  # Black color for maximum visibility
-                   thickness=-1)  # Filled circle
+    # Inner walls
+    maze[3:12, 3] = 0  # Vertical wall
+    maze[3:12, 11] = 0  # Vertical wall
+    maze[3, 3:12] = 0  # Horizontal wall
+    maze[11, 3:12] = 0  # Horizontal wall
+    maze[7, 6:9] = 0  # Small horizontal wall
     
-    return maze_with_path
+    # Create openings
+    maze[1, 1:14] = 1  # Top path
+    maze[13, 1:14] = 1  # Bottom path
+    maze[1:14, 1] = 1  # Left path
+    maze[1:14, 13] = 1  # Right path
+    maze[7, 7] = 1  # Opening in middle wall
+    
+    return maze
 
 # --- Streamlit App ---
-st.title("🧠 A* Maze Solver")
-st.markdown("Upload a black and white maze image to find the shortest path from top-left to bottom-right.")
+st.set_page_config(page_title="Maze Solver", layout="wide")
 
-uploaded_file = st.file_uploader("Upload a maze image", type=["png", "jpg", "jpeg"])
+st.title("🧠 Interactive Maze Solver - Fixed Version")
+st.markdown("Upload a black and white maze image to find the shortest path using A* algorithm")
 
-if uploaded_file is not None:
-    try:
-        # Load and process image
-        image = Image.open(uploaded_file)
-        st.image(image, caption="Uploaded Maze", use_container_width=True)
+# Sidebar
+with st.sidebar:
+    st.header("📋 Instructions")
+    st.markdown("""
+    1. **Upload a maze image** (PNG, JPG, JPEG)
+    2. **Black pixels** = Walls
+    3. **White pixels** = Paths
+    4. **Green cell** = Start point
+    5. **Blue cell** = End point
+    6. **Red path** = Solution
+    """)
+    
+    st.header("⚙️ Settings")
+    cell_size = st.slider("Cell Size (pixels)", 4, 15, 8, help="Adjust maze cell size for better visibility")
+    maze_size = st.slider("Maze Size", 30, 150, 80, help="Resize maze for processing")
+    
+    st.header("🧪 Test Options")
+    if st.button("🎯 Test with Simple Maze"):
+        test_maze = create_test_maze()
+        start = (1, 1)
+        end = (13, 13)
         
-        # Convert to maze grid
-        maze = convert_image_to_maze(image)
+        # Find path
+        test_path = astar(test_maze, start, end)
         
-        # Display maze grid info
-        st.write(f"Maze size: {maze.shape[0]} x {maze.shape[1]}")
-        
-        # Set start and end points
-        start = (0, 0)
-        end = (maze.shape[0] - 1, maze.shape[1] - 1)
-        
-        # Find nearest path pixels for start and end
-        start = find_nearest_path(maze, start)
-        end = find_nearest_path(maze, end)
-        
-        if start is None or end is None:
-            st.error("❌ Could not find valid start/end points in the maze.")
+        if test_path:
+            st.success(f"✅ Test maze solved! Path length: {len(test_path)}")
+            
+            # Display test maze
+            test_html = create_maze_html(test_maze, test_path, 12)
+            st.components.v1.html(test_html, height=400, scrolling=True)
         else:
-            st.write(f"Start: {start}, End: {end}")
+            st.error("❌ Could not solve test maze")
+
+# Main content
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.header("📤 Upload Maze")
+    uploaded_file = st.file_uploader("Choose a maze image", type=["png", "jpg", "jpeg"])
+    
+    if uploaded_file is not None:
+        try:
+            # Load and display original image
+            image = Image.open(uploaded_file)
+            st.image(image, caption="Original Maze Image", use_container_width=True)
+            
+            # Convert to maze grid
+            with st.spinner("🔄 Processing image..."):
+                maze = convert_image_to_maze(image, (maze_size, maze_size))
+            
+            # Display maze statistics
+            wall_count = np.sum(maze == 0)
+            path_count = np.sum(maze == 1)
+            st.info(f"📊 Maze: {maze.shape[0]}×{maze.shape[1]} | Walls: {wall_count} | Paths: {path_count}")
+            
+            if path_count == 0:
+                st.error("❌ No paths found in the image. Make sure white areas represent paths.")
+                st.stop()
+            
+            # Find start and end points
+            start = find_nearest_path(maze, (1, 1))  # Near top-left
+            end = find_nearest_path(maze, (maze.shape[0]-2, maze.shape[1]-2))  # Near bottom-right
+            
+            if start is None:
+                start = find_nearest_path(maze, (0, 0), max_search=maze.shape[0])
+            if end is None:
+                end = find_nearest_path(maze, (maze.shape[0]-1, maze.shape[1]-1), max_search=maze.shape[0])
+                
+            if start is None or end is None:
+                st.error("❌ Could not find valid start or end points")
+                st.stop()
+            
+            st.success(f"🎯 Start: {start} | End: {end}")
             
             # Solve maze
-            with st.spinner("Solving maze using A* algorithm..."):
+            with st.spinner("🔍 Finding optimal path..."):
                 path = astar(maze, start, end)
             
             if path is None:
-                st.error("❌ No path found in the maze.")
+                st.error("❌ No solution found - maze may be unsolvable")
+                
+                # Show maze without path for debugging
+                debug_html = create_maze_html(maze, None, cell_size)
+                st.markdown("**Maze visualization (no solution):**")
+                st.components.v1.html(debug_html, height=400, scrolling=True)
             else:
-                st.success(f"✅ Path found! Length: {len(path)}")
+                st.success(f"✅ Solution found! Path length: {len(path)} steps")
                 
-                # Debug information
-                st.write(f"Path starts at: {path[0]}, ends at: {path[-1]}")
-                st.write(f"Number of path points: {len(path)}")
+                # Calculate path efficiency
+                manhattan_distance = abs(end[0] - start[0]) + abs(end[1] - start[1])
+                efficiency = round(manhattan_distance / len(path) * 100, 1)
+                st.info(f"📈 Path efficiency: {efficiency}% (Manhattan distance: {manhattan_distance})")
                 
-                # Visualization choice
-                viz_choice = st.radio(
-                    "Choose visualization style:",
-                    ["Line Path", "Point Path", "Both"],
-                    horizontal=True
-                )
-                
-                # Draw path based on choice
-                if viz_choice == "Line Path":
-                    maze_with_path = draw_path_on_maze(maze, path)
-                    st.image(maze_with_path, caption="Maze with line path", use_container_width=True)
+                with col2:
+                    st.header("🎯 Solution Visualization")
                     
-                    # Debug: Show original maze for comparison
-                    st.write("Debug: Original maze (white = path, black = wall):")
-                    st.image(maze * 255, caption="Original maze grid", use_container_width=True)
+                    # Create and display the solved maze
+                    maze_html = create_maze_html(maze, path, cell_size)
+                    st.components.v1.html(maze_html, height=600, scrolling=True)
                     
-                elif viz_choice == "Point Path":
-                    maze_with_path = draw_path_points(maze, path)
-                    st.image(maze_with_path, caption="Maze with point path", use_container_width=True)
-                else:  # Both
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        maze_line = draw_path_on_maze(maze, path)
-                        st.image(maze_line, caption="Line Path", use_container_width=True)
-                    with col2:
-                        maze_points = draw_path_points(maze, path)
-                        st.image(maze_points, caption="Point Path", use_container_width=True)
-                
-                # Show path coordinates
-                with st.expander("View path coordinates"):
-                    st.write("Path coordinates (row, col):")
-                    for i, point in enumerate(path):
-                        st.write(f"{i+1}: {point}")
+                    # Download options
+                    maze_data = {
+                        "maze_size": maze.shape,
+                        "path_length": len(path),
+                        "start": start,
+                        "end": end,
+                        "path": path,
+                        "efficiency": efficiency
+                    }
+                    
+                    st.download_button(
+                        label="📥 Download Solution Data",
+                        data=json.dumps(maze_data, indent=2),
+                        file_name=f"maze_solution_{maze.shape[0]}x{maze.shape[1]}.json",
+                        mime="application/json"
+                    )
                         
-    except Exception as e:
-        st.error(f"❌ Error processing image: {str(e)}")
-        st.write("Please make sure you've uploaded a valid image file.")
+        except Exception as e:
+            st.error(f"❌ Error processing image: {str(e)}")
+            st.exception(e)
 
-# Add some helpful information
-with st.sidebar:
-    st.header("How to use:")
-    st.markdown("""
-    1. **Upload a maze image** - Should be black and white
-    2. **Black pixels** = Walls
-    3. **White pixels** = Paths
-    4. **Algorithm** will find shortest path from top-left to bottom-right
-    5. **Choose visualization**: Line path (smooth) or Point path (detailed)
-    """)
-    
-    st.header("Visualization Options:")
-    st.markdown("""
-    - **Line Path**: Smooth continuous line showing the route
-    - **Point Path**: Individual points showing each step
-    - **Both**: Side-by-side comparison
-    """)
-    
-    st.header("Tips:")
-    st.markdown("""
-    - Use clear, high-contrast images
-    - Ensure walls are completely black
-    - Ensure paths are completely white
-    - Maze should have a clear start and end
-    - Line visualization is best for understanding the route
-    - Point visualization shows exact path details
-    """)
+# Footer
+st.markdown("---")
+st.markdown("**Fixed Maze Solver** - Improved path visualization and debugging")
