@@ -6,7 +6,8 @@ import os
 import re
 import PyPDF2  # Add this import
 import os
-
+import pandas
+import docx
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API'))
 genai.GenerationConfig.temperature = 0.7
@@ -18,7 +19,7 @@ if not os.path.exists("files"):
 
 st.set_page_config(
     page_title="Code-GPT",
-    layout="centered",
+    layout="wide",
     page_icon="🤖",
     
 )
@@ -56,11 +57,7 @@ st.markdown("""
     margin: 20px 0;
 }
 
-.centered-upload {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-}
+
 
 .stFileUploader {
     width: 100% !important;
@@ -175,6 +172,32 @@ def chat_bro(prompt, uploadedfile, chat_history):
                     st.warning("The PDF appears to be empty or unreadable")
             except Exception as e:
                 st.error(f"Error processing PDF: {e}")
+        
+        elif file_extension in [".csv",".xlsx"]:
+            st.success(f"Uploaded Data-set : {uploadedfile.name}")
+            try:
+                if file_extension == ".csv":
+                    df = pandas.read_csv(file_path)
+                else:
+                    df = pandas.read_csv(file_path)
+                st.dataframe(df.head())
+                prompt_with_df = f"Here's the content of the CSV/xlsx: \n\n{df.to_string()}\n\n{prompt}"
+                input_data[0] = prompt_with_df
+
+            except Exception as e:
+                st.error(f"The Dataframe is not avaliable due to: {e}")
+
+        elif file_extension == ".docx":
+            st.success(f"Uploaded DOCX: {uploadedfile.name}")
+            try:
+                doc = docx.Document(file_path)
+                docx_text = "\n".join([para.text for para in doc.paragraphs if para.text.strip()])
+                if docx_text.strip():
+                    input_data[0] = f"Here's the content from the DOCX file:\n\n{docx_text}\n\n{prompt}"
+                else:
+                    st.warning("The DOCX file appears to be empty.")
+            except Exception as e:
+                st.error(f"Error reading DOCX file: {e}")
 
         elif file_extension == ".mp4":
             st.video(file_path)
@@ -186,11 +209,12 @@ def chat_bro(prompt, uploadedfile, chat_history):
     response = model.generate_content(input_data)
     return response.text
 
-uploaded_file = st.file_uploader("Upload an image, PDF, or video", type=["jpg", "jpeg", "png", "mp4", "pdf", ".md"])
+uploaded_file = st.file_uploader("Upload an image, PDF, or video", type=["jpg", "jpeg", "png", "mp4", "pdf", ".md",".csv",".xlsx"])
 
 user_input = st.chat_input(placeholder="Enter your message")
 
-with st.container(height=400, ):
+
+with st.container(height=400,border=False ):
     if "messages" not in st.session_state:
         st.session_state["messages"] = []
 
