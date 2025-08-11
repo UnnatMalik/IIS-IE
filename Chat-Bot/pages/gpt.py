@@ -19,7 +19,7 @@ if not os.path.exists("files"):
 
 st.set_page_config(
     page_title="Code-GPT",
-    layout="wide",
+    layout="centered",
     page_icon="🤖",
     
 )
