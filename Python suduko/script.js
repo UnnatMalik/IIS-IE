@@ -316,6 +316,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 board = JSON.parse(JSON.stringify(data.grid)); // Copy to working board
                 updateGrid(board);
                 updateStatus('Puzzle detected successfully! Ready to solve.', 'success', 'fas fa-check-circle');
+                // Console logging for OCR detections and grid
+                try {
+                    const detections = data.ocrDebug || [];
+                    console.group('OCR Detections');
+                    if (detections.length === 0) {
+                        console.log('No OCR detections returned.');
+                    } else {
+                        detections.forEach((d, idx) => {
+                            console.log(`${idx + 1}. digit=${d.digit} at (r=${d.row}, c=${d.col}) bbox=(${d.left}, ${d.top}, ${d.width}, ${d.height})`);
+                        });
+                    }
+                    console.groupEnd();
+                    console.group('OCR Parsed Grid (rows)');
+                    board.forEach((row, r) => console.log(`r${r}: [${row.join(', ')}]`));
+                    console.groupEnd();
+                } catch (e) {
+                    console.warn('Failed to log OCR debug info:', e);
+                }
             } else {
                 throw new Error('No puzzle detected in image. Please try a clearer image.');
             }
@@ -359,6 +377,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 board = data.solution;
                 updateGrid(board, true); // Enable animations for solved cells
                 updateStatus('Puzzle solved successfully! 🎉', 'success', 'fas fa-trophy');
+                // Console logging for solving steps
+                try {
+                    const steps = data.steps || [];
+                    console.group(`Solve Steps (${steps.length})`);
+                    if (steps.length === 0) {
+                        console.log('No step log returned.');
+                    } else {
+                        steps.forEach((s, idx) => {
+                            console.log(`${idx + 1}. ${s.action.toUpperCase()} ${s.num} at (r=${s.row}, c=${s.col}) depth=${s.depth}`);
+                        });
+                    }
+                    console.groupEnd();
+                    console.group('Solved Grid (rows)');
+                    board.forEach((row, r) => console.log(`r${r}: [${row.join(', ')}]`));
+                    console.groupEnd();
+                } catch (e) {
+                    console.warn('Failed to log solving steps:', e);
+                }
             } else if (data.error) {
                 throw new Error(data.error);
             } else {
