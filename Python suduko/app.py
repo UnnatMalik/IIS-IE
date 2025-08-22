@@ -36,17 +36,36 @@ def is_valid(board, row, col, num):
  
     return True
 
-def solve_sudoku(board):
-    """Solve Sudoku puzzle using backtracking algorithm"""
+def solve_sudoku(board, steps=None, depth=0):
+    """Solve Sudoku puzzle using backtracking algorithm.
+    Records each placement and backtrack step if steps list is provided.
+    """
     for row in range(9):
         for col in range(9):
             if board[row][col] == 0:  # Empty cell found
                 for num in range(1, 10):  # Try numbers 1-9
                     if is_valid(board, row, col, num):
                         board[row][col] = num
-                        if solve_sudoku(board):
+                        if steps is not None:
+                            steps.append({
+                                'action': 'place',
+                                'row': row,
+                                'col': col,
+                                'num': num,
+                                'depth': depth
+                            })
+                        if solve_sudoku(board, steps, depth + 1):
                             return True
-                        board[row][col] = 0  # Backtrack
+                        # Backtrack
+                        board[row][col] = 0
+                        if steps is not None:
+                            steps.append({
+                                'action': 'backtrack',
+                                'row': row,
+                                'col': col,
+                                'num': num,
+                                'depth': depth
+                            })
                 return False  # No valid number found
     return True  # All cells filled successfully
 
@@ -58,9 +77,10 @@ def encode_params(params):
 
 def parse_ocr_result(parsed_result):
     grid = [[0 for _ in range(9)] for _ in range(9)]
+    detections = []  # Collect OCR digit detections with locations
     lines = parsed_result.get('TextOverlay', {}).get('Lines', [])
     if not lines:
-        return grid
+        return grid, detections
     min_x = min_y = float('inf')
     max_x = max_y = float('-inf')
     for line in lines:
@@ -70,7 +90,7 @@ def parse_ocr_result(parsed_result):
             max_x = max(max_x, word['Left'] + word['Width'])
             max_y = max(max_y, word['Top'] + word['Height'])
     if float('inf') in [min_x, min_y] or float('-inf') in [max_x, max_y]:
-        return grid
+        return grid, detections
     puzzle_width = max_x - min_x
     puzzle_height = max_y - min_y
     cell_width = puzzle_width / 9
@@ -89,7 +109,16 @@ def parse_ocr_result(parsed_result):
                 row = int((center_y - min_y) / cell_height)
                 if 0 <= row < 9 and 0 <= col < 9 and grid[row][col] == 0:
                     grid[row][col] = digit
-    return grid
+                    detections.append({
+                        'digit': digit,
+                        'row': row,
+                        'col': col,
+                        'left': word['Left'],
+                        'top': word['Top'],
+                        'width': word['Width'],
+                        'height': word['Height']
+                    })
+    return grid, detections
 
 @app.route('/process-image', methods=['POST'])
 def process_image():
@@ -111,8 +140,15 @@ def process_image():
     if data.get('IsErroredOnProcessing'):
         return jsonify({'error': data.get('ErrorMessage', ['Unknown error'])[0]}), 500
     parsed_result = data['ParsedResults'][0]
-    grid = parse_ocr_result(parsed_result)
-    return jsonify({'grid': grid})
+    grid, ocr_debug = parse_ocr_result(parsed_result)
+
+    # Server-side logging of OCR detections
+    if ocr_debug:
+        print('OCR Detections (digit @ row,col with bbox):')
+        for d in ocr_debug:
+            print(f"digit={d['digit']} at (r={d['row']},c={d['col']}) bbox=({d['left']},{d['top']},{d['width']},{d['height']})")
+
+    return jsonify({'grid': grid, 'ocrDebug': ocr_debug})
 
 @app.route('/solve-puzzle', methods=['POST'])
 def solve_puzzle():
@@ -136,9 +172,12 @@ def solve_puzzle():
     import copy
     solution_board = copy.deepcopy(board)
     
-    # Try to solve the puzzle
-    if solve_sudoku(solution_board):
-        return jsonify({'solution': solution_board})
+    # Try to solve the puzzle with step logging
+    steps = []
+    if solve_sudoku(solution_board, steps):
+        # Server-side summary logging
+        print(f"Sudoku solved with {len(steps)} steps (including backtracks)")
+        return jsonify({'solution': solution_board, 'steps': steps})
     else:
         return jsonify({'error': 'No solution exists for this Sudoku puzzle.'}), 400
 
